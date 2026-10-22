@@ -199,32 +199,30 @@ export class PlayerController {
    * 每幀物理與控制器更新 (固定 30 FPS 時間步長)
    */
   update(delta) {
-    // 1. 計算水平移動向量（依據 yaw）
+    // 1. 計算基於人朝向 (Yaw) 的水平前後左右方向向量
     let speed = this.isProne
       ? this.proneSpeed
       : (this.keys.sprint ? this.sprintSpeed : this.walkSpeed);
 
-    let moveX = 0;
-    let moveZ = 0;
+    // 視角朝向向量（前向與右向）
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(yAxis, this.yaw);
+    const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(yAxis, this.yaw);
 
-    if (this.keys.forward) moveZ -= 1;
-    if (this.keys.backward) moveZ += 1;
-    if (this.keys.left) moveX -= 1;
-    if (this.keys.right) moveX += 1;
+    const moveDirection = new THREE.Vector3(0, 0, 0);
 
-    // 歸一化
-    const len = Math.hypot(moveX, moveZ);
-    if (len > 0) {
-      moveX /= len;
-      moveZ /= len;
+    // 嚴格配合玩家目前朝向：前 W、後 S、左 A、右 D
+    if (this.keys.forward)  moveDirection.add(forward);  // 前進 (W)：朝玩家視線正前方
+    if (this.keys.backward) moveDirection.sub(forward);  // 後退 (S)：朝玩家視線正後方
+    if (this.keys.left)     moveDirection.sub(right);    // 往左 (A)：朝玩家視線正左方
+    if (this.keys.right)    moveDirection.add(right);    // 往右 (D)：朝玩家視線正右方
+
+    if (moveDirection.lengthSq() > 0) {
+      moveDirection.normalize();
     }
 
-    // 旋轉至相機 Yaw 朝向
-    const sin = Math.sin(this.yaw);
-    const cos = Math.cos(this.yaw);
-
-    const worldMoveX = (moveX * cos - moveZ * sin) * speed;
-    const worldMoveZ = (moveX * sin + moveZ * cos) * speed;
+    const worldMoveX = moveDirection.x * speed;
+    const worldMoveZ = moveDirection.z * speed;
 
     // 疊加風力偏向向量 (Wind Drift)
     this.velocity.x = worldMoveX + this.windDrift.x;

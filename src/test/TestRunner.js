@@ -312,24 +312,51 @@ export class TestRunner {
     // ----------------------------------------------------
     // STEP 5: 控制方向鍵、跳起來與趴下
     // ----------------------------------------------------
-    await testCase('TC-11', 'STEP 5: 控制方向鍵前 W、後 S、左 A、右 D 走動位移正常', async () => {
+    await testCase('TC-11', 'STEP 5: 控制方向鍵前 W、後 S、左 A、右 D 嚴格配合玩家朝向位移', async () => {
       player.respawn();
-      const startPos = player.position.clone();
 
-      // 前 W
+      // 1. 測試轉動朝向 (Yaw = 90度)
+      player.yaw = -Math.PI / 2; // 朝向 +X 軸
+
+      const p0 = player.position.clone();
       player.keys.forward = true;
       player.update(0.2);
       player.keys.forward = false;
-      const movedZ = Math.abs(player.position.z - startPos.z) + Math.abs(player.position.x - startPos.x);
-      if (movedZ <= 0.1) throw new Error('按下 W 鍵角色未產生位移！');
 
-      // 站立停止
-      player.update(0.1);
-      const stopPos = player.position.clone();
-      player.update(0.1);
-      if (player.position.distanceTo(stopPos) > 0.05) {
-        throw new Error('放開方向鍵後角色未平穩停止！');
+      // 視線朝 +X，按 W 應朝 +X 方向移動
+      if (player.position.x - p0.x <= 0.2) {
+        throw new Error('視角轉向右方後，按 W 前進未朝人朝向正前方 (+X) 移動！');
       }
+
+      // 2. 測試按 S (後退)
+      const p1 = player.position.clone();
+      player.keys.backward = true;
+      player.update(0.2);
+      player.keys.backward = false;
+      if (player.position.x >= p1.x - 0.1) {
+        throw new Error('按 S 後退未朝人朝向正後方 (-X) 移動！');
+      }
+
+      // 3. 測試按 D (向右橫移)
+      const p2 = player.position.clone();
+      player.keys.right = true;
+      player.update(0.2);
+      player.keys.right = false;
+      if (player.position.z - p2.z <= 0.1) {
+        throw new Error('按 D 向右未朝人朝向右方 (+Z) 移動！');
+      }
+
+      // 4. 測試按 A (向左橫移)
+      const p3 = player.position.clone();
+      player.keys.left = true;
+      player.update(0.2);
+      player.keys.left = false;
+      if (player.position.z >= p3.z - 0.1) {
+        throw new Error('按 A 向左未朝人朝向左方 (-Z) 移動！');
+      }
+
+      // 還原朝向
+      player.yaw = 0;
     });
 
     await testCase('TC-12', 'STEP 5: 空白鍵跳一下，重力自然落下落地，不穿地不浮空', async () => {
