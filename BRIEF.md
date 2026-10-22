@@ -53,13 +53,11 @@
      - 生成水平流動的風力粒子與空氣流動視覺。
      - **物理影響**：全域風力向量 $\vec{F}_{\text{wind}}$，使玩家走路/跑步時的方向**強制產生偏向與位移漂移**。
    - **冰雹 (Hail)**：
-     - 快速且密集下墜的小冰塊粒子。
-     - **傷害機制**：當玩家處於戶外且上方**無任何遮擋方塊**時，冰雹會定期對玩家造成傷害（Health Damage），並伴隨畫面受傷紅閃提示。
+     - 快速且密集下墜的小冰塊粒子效果，營造惡劣天候氛圍。
 
-4. **介面與生存狀態 (UI & Status)**：
+4. **介面與狀態 (UI & Status)**：
    - **十字準星 (Crosshair)**：畫面中心點鎖定方塊。
    - **物品快捷列 (Hotbar)**：顯示當前手持方塊種類、堆疊數量與 16×16 圖示。
-   - **生命值 (Health Hearts)**：顯示玩家目前血量，供冰雹傷害扣除與判定。
    - **天氣與風向指示器**：顯示當前天氣狀態與風向羅盤/風向箭頭。
 
 ---
@@ -113,10 +111,8 @@ flowchart TD
         WeatherMgr["天氣狀態機 (晴 / 雨 / 雪 / 風 / 冰雹)"]
         ParticleSystem["天氣粒子系統 (Rain / Snow / Hail)"]
         WindForce["風向物理推力計算 (Wind Drift)"]
-        HailCheck["遮蔽高度檢測 (Overhead Raycast)"]
         WeatherMgr --> ParticleSystem
         WeatherMgr --> WindForce
-        WeatherMgr --> HailCheck
     end
 
     subgraph InteractionSub ["方塊互動與物品"]
@@ -132,7 +128,6 @@ flowchart TD
     Loop --> Renderer
 
     WindForce --> Physics
-    HailCheck -->|未遮擋給予傷害| PlayerSub
 
     Raycast --> Mining
     Raycast --> Placement
@@ -165,11 +160,8 @@ flowchart TD
   - 當前天氣為 `Windy` 時，生成一個二維風向向量（如 $\vec{W} = (w_x, w_z)$）。
   - 在角色每幀更新位置時：$\vec{V}_{\text{final}} = \vec{V}_{\text{input}} + \vec{W} \times \Delta t$。
   - 玩家走路時會感受到明顯側推力，需要逆風調整移動視角。
-- **冰雹傷害與遮蔽判定 (Hail & Roof Detection)**：
-  - 當前天氣為 `Hail` 時，每 1.5 秒執行一次遮蔽檢測：
-    - 從玩家坐標 $(x, y, z)$ 向上檢查 $(x, y+1 \sim 31, z)$ 是否存在任何固體方塊。
-    - **若無遮蔽**：扣除玩家 1 點生命值（心型 UI 閃爍受傷），並觸發受傷擊退或警示。
-    - **若有遮蔽（躲在屋簷或洞穴下）**：完全免疫傷害。
+- **冰雹環境效果 (Hail Particles)**：
+  - 當前天氣為 `Hail` 時，生成密集快速墜落的小冰塊粒子，營造劇烈天氣氛圍。
 
 ---
 
@@ -196,5 +188,5 @@ flowchart TD
 | **Phase 1** | **基礎設施與渲染管線** | 建立 Three.js 場景、鎖定 30 FPS 循環、載入 `sky-island-assets.zip` 貼圖、生成 $32 \times 32 \times 32$ 初始地形 |
 | **Phase 2** | **物理與第一人稱控制器** | 第一人稱視角 (Pointer Lock)、走/跑/跳控制、AABB 方塊碰撞系統 |
 | **Phase 3** | **方塊互動與存檔** | 挖掘 (16×16 裂痕動畫)、掉落物生成與拾取、放方塊、`LocalStorage/IndexedDB` 持久化儲存 |
-| **Phase 4** | **動態天氣與環境物理** | 雨/雪粒子效果、強風位移偏向向量、冰雹頂部遮蔽判定與扣血傷害機制 |
-| **Phase 5** | **UI 整合與整體優化** | 快捷欄、血條、十字準星、天氣狀態 HUD、效能優化與邊界防護 |
+| **Phase 4** | **動態天氣與環境物理** | 雨/雪/冰雹粒子效果、強風位移偏向向量 |
+| **Phase 5** | **UI 整合與整體優化** | 快捷欄、十字準星、天氣狀態 HUD、效能優化與邊界防護 |
