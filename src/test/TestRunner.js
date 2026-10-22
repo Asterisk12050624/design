@@ -280,6 +280,8 @@ export class TestRunner {
       if (activeSlot.count !== originalCount - 1) {
         throw new Error(`放置後數字未 -1！原值: ${originalCount}, 現值: ${activeSlot.count}`);
       }
+      // 清理測試方塊
+      world.setVoxel(16, 15, 16, BLOCK_TYPES.AIR);
     });
 
     await testCase('TC-09', 'STEP 4: 嚴格禁止數量為 0 時還放得出來', async () => {
@@ -330,51 +332,68 @@ export class TestRunner {
       if (slot.count !== initialCount) {
         throw new Error(`❌ 違規：閉環循環後數字未能回到原本！原初值: ${initialCount}, 最終值: ${slot.count}`);
       }
+      // 清理測試放置的方塊
+      world.setVoxel(testX, testY, testZ, BLOCK_TYPES.AIR);
     });
 
     // ----------------------------------------------------
     // STEP 5: 控制方向鍵、跳起來與趴下
     // ----------------------------------------------------
     await testCase('TC-11', 'STEP 5: 控制方向鍵前 W、後 S、左 A、右 D 嚴格配合玩家朝向位移', async () => {
-      player.respawn();
+      // 確保測試跑道空間平整且無殘留方塊阻擋
+      for (let x = 12; x <= 20; x++) {
+        for (let z = 12; z <= 20; z++) {
+          world.setVoxel(x, 14, z, BLOCK_TYPES.GRASS); // 平整地面
+          world.setVoxel(x, 15, z, BLOCK_TYPES.AIR);   // 空氣通道
+          world.setVoxel(x, 16, z, BLOCK_TYPES.AIR);
+          world.setVoxel(x, 17, z, BLOCK_TYPES.AIR);
+        }
+      }
 
-      // 1. 測試轉動朝向 (Yaw = 90度)
-      player.yaw = -Math.PI / 2; // 朝向 +X 軸
+      player.position.set(16, 15, 16);
+      player.velocity.set(0, 0, 0);
+      player.isGrounded = true;
 
+      // 1. 測試轉動朝向 (Yaw = -90度，朝向 +X 軸)
+      player.yaw = -Math.PI / 2;
+
+      // 前 W (朝向視線正前方 +X)
       const p0 = player.position.clone();
       player.keys.forward = true;
       player.update(0.2);
       player.keys.forward = false;
 
-      // 視線朝 +X，按 W 應朝 +X 方向移動
       if (player.position.x - p0.x <= 0.2) {
-        throw new Error('視角轉向右方後，按 W 前進未朝人朝向正前方 (+X) 移動！');
+        throw new Error('視角轉向右方 (+X) 後，按 W 前進未朝視線正前方 (+X) 移動！');
       }
 
-      // 2. 測試按 S (後退)
+      // 2. 測試按 S (後退：配合朝向往後前進，應朝 -X 移動)
       const p1 = player.position.clone();
       player.keys.backward = true;
       player.update(0.2);
       player.keys.backward = false;
-      if (player.position.x >= p1.x - 0.1) {
+
+      if (player.position.x >= p1.x - 0.2) {
         throw new Error('按 S 後退未朝人朝向正後方 (-X) 移動！');
       }
 
-      // 3. 測試按 D (向右橫移)
+      // 3. 測試按 D (向右橫移：應朝 +Z 移動)
       const p2 = player.position.clone();
       player.keys.right = true;
       player.update(0.2);
       player.keys.right = false;
-      if (player.position.z - p2.z <= 0.1) {
+
+      if (player.position.z - p2.z <= 0.2) {
         throw new Error('按 D 向右未朝人朝向右方 (+Z) 移動！');
       }
 
-      // 4. 測試按 A (向左橫移)
+      // 4. 測試按 A (向左橫移：應朝 -Z 移動)
       const p3 = player.position.clone();
       player.keys.left = true;
       player.update(0.2);
       player.keys.left = false;
-      if (player.position.z >= p3.z - 0.1) {
+
+      if (player.position.z >= p3.z - 0.2) {
         throw new Error('按 A 向左未朝人朝向左方 (-Z) 移動！');
       }
 
