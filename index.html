@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mini Voxel World - 輕量級體素世界</title>
+  <link rel="icon" type="image/png" href="assets/sky-island-assets/icons/grass.png">
   <link rel="stylesheet" href="styles.css">
 
   <!-- Three.js ES Module 映射 -->
@@ -35,8 +36,26 @@
     <div style="display: flex; gap: 8px;">
       <div class="hud-pill" id="fps-counter">FPS: 30</div>
       <div class="hud-pill">
+        <button class="hud-btn" id="btn-run-tests" style="background: #10b981;" title="執行 VERIFY.md 逐項自動化測試">🧪 自動測試</button>
+      </div>
+      <div class="hud-pill">
         <button class="hud-btn btn-danger" id="btn-reset" title="清空存檔重置島嶼">重置世界 🔄</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 測試報告面板 (預設隱藏) -->
+  <div id="test-modal" style="display: none;">
+    <div class="test-header">
+      <h3>🧪 VERIFY.md 全流程自動驗收報告</h3>
+      <button class="hud-btn" id="btn-close-test" style="background: #475569;">✕ 關閉</button>
+    </div>
+    <div class="test-body" id="test-results-list">
+      <div style="color: #94a3b8; text-align: center; padding: 20px;">正在準備執行各項驗收測試...</div>
+    </div>
+    <div class="test-footer">
+      <span id="test-summary" style="font-size: 13px; font-weight: 600;">測試準備中...</span>
+      <button class="hud-btn" id="btn-retest" style="background: #3b82f6;">重新測試 ⟳</button>
     </div>
   </div>
 
@@ -76,7 +95,10 @@
         </div>
       </div>
 
-      <button class="start-btn" id="btn-start">點擊進入世界 (鎖定游標)</button>
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="start-btn" id="btn-start">點擊進入世界 (鎖定游標)</button>
+        <button class="start-btn" id="btn-start-test" style="background: #10b981;">🧪 執行驗收測試</button>
+      </div>
       <div style="font-size: 11px; color: #64748b; margin-top: 14px;">提示：按 ESC 鍵可暫停並釋放滑鼠</div>
     </div>
   </div>

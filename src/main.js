@@ -12,6 +12,7 @@ import { MiningSystem } from './interaction/MiningSystem.js';
 import { DropManager } from './interaction/DropManager.js';
 import { PlacementSystem } from './interaction/PlacementSystem.js';
 import { WeatherManager, WEATHER_LABELS } from './weather/WeatherManager.js';
+import { TestRunner } from './test/TestRunner.js';
 
 class GameApp {
   constructor() {
@@ -73,10 +74,14 @@ class GameApp {
     // 5. 動態天氣系統 (雨/雪/風偏向/冰雹)
     this.weather = new WeatherManager(this.scene, this.player);
 
-    // 6. UI HUD 綁定
+    // 6. 測試執行器
+    this.testRunner = new TestRunner(this);
+    window.runVerifyTests = () => this.executeTests();
+
+    // 7. UI HUD 綁定
     this.initUI();
 
-    // 7. 30 FPS 固定主迴圈
+    // 8. 30 FPS 固定主迴圈
     this.loop = new GameLoop(
       (delta) => this.update(delta),
       () => this.render(),
@@ -84,6 +89,11 @@ class GameApp {
     );
 
     this.loop.start();
+
+    // 檢查 URL query 參數是否要自動觸發測試
+    if (new URLSearchParams(window.location.search).get('test')) {
+      setTimeout(() => this.executeTests(), 800);
+    }
   }
 
   initThree() {
@@ -233,13 +243,80 @@ class GameApp {
       this.canvas.requestPointerLock();
     });
 
+    // 測試面板相關事件
+    const testModal = document.getElementById('test-modal');
+    const runTestBtn = document.getElementById('btn-run-tests');
+    const startTestBtn = document.getElementById('btn-start-test');
+    const closeTestBtn = document.getElementById('btn-close-test');
+    const retestBtn = document.getElementById('btn-retest');
+
+    const openAndRunTests = (e) => {
+      if (e) e.stopPropagation();
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+      overlay.style.display = 'none';
+      testModal.style.display = 'flex';
+      this.executeTests();
+    };
+
+    if (runTestBtn) runTestBtn.addEventListener('click', openAndRunTests);
+    if (startTestBtn) startTestBtn.addEventListener('click', openAndRunTests);
+    if (retestBtn) retestBtn.addEventListener('click', () => this.executeTests());
+    if (closeTestBtn) closeTestBtn.addEventListener('click', () => {
+      testModal.style.display = 'none';
+      overlay.style.display = 'flex';
+    });
+
     document.addEventListener('pointerlockchange', () => {
       if (!document.pointerLockElement) {
-        overlay.style.display = 'flex';
+        if (testModal.style.display !== 'flex') {
+          overlay.style.display = 'flex';
+        }
       } else {
         overlay.style.display = 'none';
+        testModal.style.display = 'none';
       }
     });
+  }
+
+  async executeTests() {
+    const listEl = document.getElementById('test-results-list');
+    const summaryEl = document.getElementById('test-summary');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div style="color: #60a5fa; text-align: center; padding: 20px;">⚡ 正在執行 VERIFY.md 各階段測試...</div>';
+    summaryEl.textContent = '測試進行中...';
+
+    const items = [];
+
+    const results = await this.testRunner.runAllTests((res) => {
+      items.push(res);
+      listEl.innerHTML = items.map(r => `
+        <div class="test-item ${r.passed ? 'passed' : 'failed'}">
+          <div>
+            <strong>${r.id}</strong>: ${r.name}
+            ${r.error ? `<div style="color: #f87171; font-size: 11px; margin-top: 4px;">❌ ${r.error}</div>` : ''}
+          </div>
+          <div class="test-status">
+            ${r.passed ? `✔ 通過 (${r.duration}ms)` : '✖ 失敗'}
+          </div>
+        </div>
+      `).join('');
+      listEl.scrollTop = listEl.scrollHeight;
+    });
+
+    const passedCount = results.filter(r => r.passed).length;
+    const totalCount = results.length;
+    const isAllPassed = (passedCount === totalCount);
+
+    summaryEl.innerHTML = `
+      驗收結果：<span style="color: ${isAllPassed ? '#10b981' : '#ef4444'}; font-size: 14px;">
+        ${passedCount} / ${totalCount} 項測試通過 (${Math.round((passedCount / totalCount) * 100)}%)
+      </span>
+    `;
+
+    return results;
   }
 
   update(delta) {

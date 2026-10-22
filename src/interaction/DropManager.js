@@ -21,8 +21,9 @@ export class DropManager {
   spawnDrop(x, y, z, blockId) {
     if (blockId === BLOCK_TYPES.AIR) return;
 
-    // 建立小方塊 Mesh (使用世界材質對應的面)
-    const mesh = new THREE.Mesh(this.boxGeometry, this.materials);
+    // 依據方塊種類取得正確的六面材質
+    const blockMat = this.getBlockMaterials(blockId);
+    const mesh = new THREE.Mesh(this.boxGeometry, blockMat);
     mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
     mesh.castShadow = true;
     this.scene.add(mesh);
@@ -42,6 +43,31 @@ export class DropManager {
     };
 
     this.drops.push(drop);
+  }
+
+  getBlockMaterials(blockId) {
+    const m = this.materials;
+    switch (blockId) {
+      case BLOCK_TYPES.GRASS:
+        // +X, -X, +Y, -Y, +Z, -Z
+        return [m[1], m[1], m[0], m[2], m[1], m[1]];
+      case BLOCK_TYPES.LOG:
+        return [m[5], m[5], m[4], m[4], m[5], m[5]];
+      case BLOCK_TYPES.DIRT:
+        return m[2];
+      case BLOCK_TYPES.STONE:
+        return m[3];
+      case BLOCK_TYPES.LEAVES:
+        return m[6];
+      case BLOCK_TYPES.PLANKS:
+        return m[7];
+      case BLOCK_TYPES.SAND:
+        return m[8];
+      case BLOCK_TYPES.BRICK:
+        return m[9];
+      default:
+        return m[2];
+    }
   }
 
   /**
