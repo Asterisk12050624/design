@@ -52,7 +52,8 @@ export class TestRunner {
       world.setVoxel(tx, ty, tz, BLOCK_TYPES.DIRT);
 
       // 模擬瞄準該方塊
-      mining.targetVoxel = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.DIRT, normal: { x: 0, y: 0, z: 1 } };
+      mining.overrideTarget = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.DIRT, normal: { x: 0, y: 0, z: 1 } };
+      mining.targetVoxel = mining.overrideTarget;
       mining.isMining = true;
       mining.miningTime = 0;
 
@@ -64,7 +65,7 @@ export class TestRunner {
       const step = 0.05; // 50ms 一幀
       let elapsed = 0;
 
-      while (elapsed < hardness + 0.1) {
+      while (elapsed < hardness + 0.15) {
         mining.update(step);
         elapsed += step;
         if (mining.crackMesh.visible) {
@@ -76,6 +77,8 @@ export class TestRunner {
           break;
         }
       }
+
+      mining.overrideTarget = null;
 
       if (world.getVoxel(tx, ty, tz) !== BLOCK_TYPES.AIR) {
         throw new Error('泥土方塊在累計時間達到後未被破壞！');
@@ -92,7 +95,8 @@ export class TestRunner {
       const tx = 16, ty = 14, tz = 14;
       world.setVoxel(tx, ty, tz, BLOCK_TYPES.STONE);
 
-      mining.targetVoxel = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.STONE, normal: { x: 0, y: 0, z: 1 } };
+      mining.overrideTarget = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.STONE, normal: { x: 0, y: 0, z: 1 } };
+      mining.targetVoxel = mining.overrideTarget;
       mining.isMining = true;
       mining.miningTime = 0;
 
@@ -104,13 +108,17 @@ export class TestRunner {
       // 模擬經過 1 秒（不應該破壞）
       mining.update(1.0);
       if (world.getVoxel(tx, ty, tz) === BLOCK_TYPES.AIR) {
+        mining.overrideTarget = null;
         throw new Error('石頭在 1 秒時被破壞了，應該比泥土久 (約 2 秒)！');
       }
 
-      // 再經過 1.1 秒（總計 2.1 秒，應該破壞）
-      mining.update(1.1);
-      if (world.getVoxel(tx, ty, tz) !== BLOCK_TYPES.AIR) {
-        throw new Error('石頭在 2.1 秒後未被成功破壞！');
+      // 再經過 1.05 秒（總計 2.05 秒，應該剛好破壞）
+      mining.update(1.05);
+      const isDestroyed = (world.getVoxel(tx, ty, tz) === BLOCK_TYPES.AIR);
+      mining.overrideTarget = null;
+
+      if (!isDestroyed) {
+        throw new Error('石頭在 2.05 秒後未被成功破壞！');
       }
     });
 
@@ -118,32 +126,47 @@ export class TestRunner {
       const tx = 16, ty = 14, tz = 14;
       world.setVoxel(tx, ty, tz, BLOCK_TYPES.STONE);
 
-      mining.targetVoxel = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.STONE, normal: { x: 0, y: 0, z: 1 } };
+      mining.overrideTarget = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.STONE, normal: { x: 0, y: 0, z: 1 } };
+      mining.targetVoxel = mining.overrideTarget;
       mining.isMining = true;
       mining.miningTime = 0;
 
       // 挖 1 秒 (50%)
       mining.update(1.0);
-      if (!mining.crackMesh.visible) throw new Error('挖掘中未顯示裂痕覆蓋層！');
+      const wasCrackVisible = mining.crackMesh.visible;
+      if (!wasCrackVisible) {
+        mining.overrideTarget = null;
+        throw new Error('挖掘中未顯示裂痕覆蓋層！');
+      }
 
       // 放開左鍵
       mining.cancelMining();
 
-      if (mining.crackMesh.visible) throw new Error('放開左鍵後裂痕依然殘留！');
-      if (mining.miningTime !== 0) throw new Error(`放開後進度未重置，殘留值：${mining.miningTime}`);
+      if (mining.crackMesh.visible) {
+        mining.overrideTarget = null;
+        throw new Error('放開左鍵後裂痕依然殘留！');
+      }
+      if (mining.miningTime !== 0) {
+        mining.overrideTarget = null;
+        throw new Error(`放開後進度未重置，殘留值：${mining.miningTime}`);
+      }
+
+      mining.overrideTarget = null;
     });
 
     await testCase('TC-04', 'STEP 1: 嚴格禁止只點一下方塊就不見', async () => {
       const tx = 16, ty = 14, tz = 14;
       world.setVoxel(tx, ty, tz, BLOCK_TYPES.DIRT);
 
-      mining.targetVoxel = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.DIRT, normal: { x: 0, y: 0, z: 1 } };
+      mining.overrideTarget = { x: tx, y: ty, z: tz, blockId: BLOCK_TYPES.DIRT, normal: { x: 0, y: 0, z: 1 } };
+      mining.targetVoxel = mining.overrideTarget;
       mining.isMining = true;
       mining.miningTime = 0;
 
       // 單擊（模擬僅 0.05 秒）立即放開
       mining.update(0.05);
       mining.cancelMining();
+      mining.overrideTarget = null;
 
       if (world.getVoxel(tx, ty, tz) === BLOCK_TYPES.AIR) {
         throw new Error('❌ 違規：單擊滑鼠左鍵方塊竟然瞬間消失破壞了！');

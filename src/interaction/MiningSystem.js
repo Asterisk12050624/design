@@ -15,6 +15,7 @@ export class MiningSystem {
     this.isMining = false;
     this.miningTime = 0;
     this.targetVoxel = null; // { x, y, z, blockId, normal }
+    this.overrideTarget = null; // 支援測試與指定目標覆蓋
 
     // 10 階 16×16 破壞裂痕貼圖
     this.crackTextures = [];
@@ -152,9 +153,14 @@ export class MiningSystem {
   }
 
   update(delta) {
-    const hit = this.raycastVoxel();
-
+    let hit = this.overrideTarget;
     if (!hit) {
+      hit = this.raycastVoxel();
+    } else {
+      hit.blockId = this.voxelWorld.getVoxel(hit.x, hit.y, hit.z);
+    }
+
+    if (!hit || hit.blockId === BLOCK_TYPES.AIR) {
       this.wireframeBox.visible = false;
       this.cancelMining();
       this.targetVoxel = null;
@@ -167,7 +173,9 @@ export class MiningSystem {
         this.targetVoxel.y !== hit.y ||
         this.targetVoxel.z !== hit.z) {
       this.targetVoxel = hit;
-      this.cancelMining();
+      if (!this.overrideTarget) {
+        this.cancelMining();
+      }
     }
 
     // 更新選取外框
@@ -200,6 +208,7 @@ export class MiningSystem {
         this.voxelWorld.setVoxel(destroyedX, destroyedY, destroyedZ, BLOCK_TYPES.AIR);
         this.cancelMining();
         this.wireframeBox.visible = false;
+        this.overrideTarget = null;
 
         // 觸發掉落回呼
         if (this.onBlockDestroyed) {
@@ -212,6 +221,6 @@ export class MiningSystem {
   }
 
   getTargetVoxel() {
-    return this.targetVoxel;
+    return this.overrideTarget || this.targetVoxel;
   }
 }
