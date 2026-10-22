@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Voxel World - 輕量級體素世界</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Three.js ES Module 映射 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D 渲染畫布 -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- 螢幕中心十字準心 -->
+  <div id="crosshair"></div>
+
+  <!-- 頂部 HUD 狀態列 -->
+  <div id="top-hud">
+    <div style="display: flex; gap: 8px;">
+      <div class="hud-pill" id="weather-pill">
+        <span id="weather-label">晴天 ☀️</span>
+        <button class="hud-btn" id="btn-weather" title="切換下一個天氣">切換天氣</button>
+      </div>
+      <div class="hud-pill" id="stance-label">姿態：站立 🚶 (L鍵)</div>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <div class="hud-pill" id="fps-counter">FPS: 30</div>
+      <div class="hud-pill">
+        <button class="hud-btn btn-danger" id="btn-reset" title="清空存檔重置島嶼">重置世界 🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部快捷欄 (Hotbar 1~9) -->
+  <div id="hotbar-container"></div>
+
+  <!-- 開始 / 暫停選單覆蓋層 -->
+  <div id="overlay-screen">
+    <div class="modal-card">
+      <div class="modal-title">Mini Voxel World (輕量級體素世界)</div>
+      <div class="modal-subtitle">Three.js 30 FPS ｜ 32×32×32 格空間 ｜ 16×16 像素風</div>
+
+      <div class="rules-grid">
+        <div class="rule-item">
+          <strong>🎮 移動操作</strong><br>
+          • 前：<code>W</code>、後：<code>S</code>、左：<code>A</code>、右：<code>D</code><br>
+          • 奔跑：按住 <code>Shift</code> + <code>W</code><br>
+          • 跳躍：空白鍵 <code>Space</code> (跳一下，平穩落地)
+        </div>
+        <div class="rule-item">
+          <strong>🧎 姿態切換 (STEP 5)</strong><br>
+          • 按 <code>L</code> 鍵趴下 (碰撞高 0.6，視角 0.4)<br>
+          • 趴著時依然可利用方向鍵正常走動<br>
+          • 頭頂有方塊阻擋時強制保持趴下
+        </div>
+        <div class="rule-item">
+          <strong>⛏️ 方塊挖掘 (STEP 1 & 2)</strong><br>
+          • 長按左鍵挖掘 (16×16 裂痕越裂越大)<br>
+          • 泥土 &lt; 1 秒，石頭約 2 秒；單擊不破壞<br>
+          • 破壞後彈出同類迷你方塊慢慢轉
+        </div>
+        <div class="rule-item">
+          <strong>📦 拾取與放置 (STEP 3 & 4)</strong><br>
+          • 走近 1.8 格內磁吸拾取 (數字 +1)<br>
+          • 3 格外禁止拾取；右鍵表面放置 (-1)<br>
+          • 數字為 0 禁止放置；完整循環數字守恆
+        </div>
+      </div>
+
+      <button class="start-btn" id="btn-start">點擊進入世界 (鎖定游標)</button>
+      <div style="font-size: 11px; color: #64748b; margin-top: 14px;">提示：按 ESC 鍵可暫停並釋放滑鼠</div>
+    </div>
+  </div>
+
+  <!-- 主邏輯程式碼載入 -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
